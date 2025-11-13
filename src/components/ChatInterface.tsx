@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import { ChatMessage } from "@/components/ChatMessage";
+import { FileUploadButton } from "@/components/FileUploadButton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Message {
   role: "user" | "assistant";
@@ -11,16 +12,17 @@ interface Message {
   timestamp: Date;
 }
 
-export function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hello! I'm your data research assistant. Ask me anything about your connected data sources.",
-      timestamp: new Date(),
-    },
-  ]);
+interface ChatInterfaceProps {
+  chatId: string;
+  messages: Message[];
+  onSendMessage: (message: string) => void;
+  onUpdateMessages: (messages: Message[]) => void;
+}
+
+export function ChatInterface({ chatId, messages, onSendMessage, onUpdateMessages }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,26 +30,35 @@ export function ChatInterface() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if ((!input.trim() && !attachedFile) || isLoading) return;
+
+    let messageContent = input;
+    if (attachedFile) {
+      messageContent = `${input}\n[Attached file: ${attachedFile.name}]`;
+    }
 
     const userMessage: Message = {
       role: "user",
-      content: input,
+      content: messageContent,
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    onUpdateMessages(newMessages);
+    onSendMessage(messageContent);
+    
     setInput("");
+    setAttachedFile(null);
     setIsLoading(true);
 
-    // TODO: Replace with actual Azure AI Foundry API call
+    // Simulate AI response - Replace this with actual Azure AI Foundry integration
     setTimeout(() => {
       const assistantMessage: Message = {
         role: "assistant",
-        content: "This is a placeholder response. Azure AI Foundry integration will be added soon.",
+        content: "This is a placeholder response. Azure AI Foundry integration will be added later.",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      onUpdateMessages([...newMessages, assistantMessage]);
       setIsLoading(false);
     }, 1000);
   };
@@ -88,18 +99,31 @@ export function ChatInterface() {
       </ScrollArea>
 
       <div className="border-t p-4">
-        <div className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your question..."
-            disabled={isLoading}
-          />
-          <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
+        <div className="flex gap-2 items-end">
+          <div className="flex items-end gap-2 flex-1">
+            <FileUploadButton onFileSelect={setAttachedFile} />
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Ask a question about your data..."
+              className="min-h-[80px] resize-none flex-1"
+            />
+          </div>
+          <Button 
+            onClick={handleSend} 
+            disabled={(!input.trim() && !attachedFile) || isLoading}
+            className="gap-2 bg-gradient-primary hover:opacity-90 transition-smooth"
+          >
             <Send className="h-4 w-4" />
+            Send
           </Button>
         </div>
+        {attachedFile && (
+          <div className="text-sm text-muted-foreground mt-2">
+            Attached: {attachedFile.name}
+          </div>
+        )}
       </div>
     </div>
   );

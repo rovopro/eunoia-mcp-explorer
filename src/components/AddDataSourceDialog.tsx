@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileUploadButton } from "@/components/FileUploadButton";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddDataSourceDialogProps {
@@ -44,6 +45,9 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
   const [workspaceId, setWorkspaceId] = useState("");
   const [datasetId, setDatasetId] = useState("");
 
+  // Text Data fields
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
   useEffect(() => {
     if (editingSource) {
       setDataSourceType(editingSource.type);
@@ -67,6 +71,8 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
         setClientSecret(creds.clientSecret || "");
         setWorkspaceId(creds.workspaceId || "");
         setDatasetId(creds.datasetId || "");
+      } else if (editingSource.type === "textdata") {
+        setUploadedFiles(creds.files || []);
       }
     } else {
       resetForm();
@@ -90,9 +96,10 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
     setClientSecret("");
     setWorkspaceId("");
     setDatasetId("");
+    setUploadedFiles([]);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!dataSourceType || !name) {
       toast({
         title: "Error",
@@ -114,6 +121,7 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
             description: "Please fill in all MySQL fields",
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
         credentials = {
@@ -130,6 +138,7 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
             description: "Please fill in all Cosmos DB fields",
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
         credentials = {
@@ -145,6 +154,7 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
             description: "Please fill in all Power BI fields",
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
         credentials = {
@@ -154,9 +164,33 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
           workspaceId,
           datasetId,
         };
+      } else if (dataSourceType === "textdata") {
+        if (uploadedFiles.length === 0) {
+          toast({
+            title: "Error",
+            description: "Please upload at least one PDF file",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        // Convert files to base64 for storage
+        const filePromises = uploadedFiles.map(file => 
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve({
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              data: reader.result
+            });
+            reader.readAsDataURL(file);
+          })
+        );
+        const filesData = await Promise.all(filePromises);
+        credentials = { files: filesData };
       }
 
-      // Get existing data sources from localStorage
       const existingDataSources = JSON.parse(localStorage.getItem("dataSources") || "[]");
 
       if (editingSource) {
@@ -180,9 +214,11 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
           type: dataSourceType,
           credentials,
           created_at: new Date().toISOString(),
+          isEnabled: true,
         };
-        existingDataSources.push(newDataSource);
-        localStorage.setItem("dataSources", JSON.stringify(existingDataSources));
+
+        const updatedDataSources = [...existingDataSources, newDataSource];
+        localStorage.setItem("dataSources", JSON.stringify(updatedDataSources));
 
         toast({
           title: "Success",
@@ -190,13 +226,13 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
         });
       }
 
-      resetForm();
       onSaved();
+      resetForm();
       onOpenChange(false);
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to save data source",
         variant: "destructive",
       });
     } finally {
@@ -207,18 +243,18 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{editingSource ? "Edit Data Source" : "Add Data Source"}</DialogTitle>
-      </DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{editingSource ? "Edit Data Source" : "Add Data Source"}</DialogTitle>
+        </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Data Source Name</Label>
             <Input
               id="name"
-              placeholder="Enter a name for this data source"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Production Database"
             />
           </div>
 
@@ -226,166 +262,207 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
             <Label htmlFor="type">Data Source Type</Label>
             <Select value={dataSourceType} onValueChange={setDataSourceType}>
               <SelectTrigger>
-                <SelectValue placeholder="Select data source type" />
+                <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="mysql">MySQL</SelectItem>
-                <SelectItem value="cosmos">Cosmos DB</SelectItem>
+                <SelectItem value="cosmos">Azure Cosmos DB</SelectItem>
                 <SelectItem value="powerbi">Power BI</SelectItem>
+                <SelectItem value="textdata">Text Data (PDF)</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {dataSourceType === "mysql" && (
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="text-sm font-medium">MySQL Configuration</h3>
+            <>
               <div className="space-y-2">
-                <Label htmlFor="mysql-host">Host</Label>
+                <Label htmlFor="mysqlHost">Host</Label>
                 <Input
-                  id="mysql-host"
-                  placeholder="localhost"
+                  id="mysqlHost"
                   value={mysqlHost}
                   onChange={(e) => setMysqlHost(e.target.value)}
+                  placeholder="localhost"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mysql-port">Port</Label>
+                <Label htmlFor="mysqlPort">Port</Label>
                 <Input
-                  id="mysql-port"
-                  placeholder="3306"
+                  id="mysqlPort"
                   value={mysqlPort}
                   onChange={(e) => setMysqlPort(e.target.value)}
+                  placeholder="3306"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mysql-database">Database</Label>
+                <Label htmlFor="mysqlDatabase">Database</Label>
                 <Input
-                  id="mysql-database"
-                  placeholder="database_name"
+                  id="mysqlDatabase"
                   value={mysqlDatabase}
                   onChange={(e) => setMysqlDatabase(e.target.value)}
+                  placeholder="my_database"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mysql-user">User</Label>
+                <Label htmlFor="mysqlUser">User</Label>
                 <Input
-                  id="mysql-user"
-                  placeholder="username"
+                  id="mysqlUser"
                   value={mysqlUser}
                   onChange={(e) => setMysqlUser(e.target.value)}
+                  placeholder="root"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mysql-password">Password</Label>
+                <Label htmlFor="mysqlPassword">Password</Label>
                 <Input
-                  id="mysql-password"
+                  id="mysqlPassword"
                   type="password"
-                  placeholder="password"
                   value={mysqlPassword}
                   onChange={(e) => setMysqlPassword(e.target.value)}
+                  placeholder="••••••••"
                 />
               </div>
-            </div>
+            </>
           )}
 
           {dataSourceType === "cosmos" && (
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="text-sm font-medium">Cosmos DB Configuration</h3>
+            <>
               <div className="space-y-2">
-                <Label htmlFor="cosmos-uri">Endpoint URI</Label>
+                <Label htmlFor="cosmosUri">Cosmos DB URI</Label>
                 <Input
-                  id="cosmos-uri"
-                  placeholder="https://your-account.documents.azure.com:443/"
+                  id="cosmosUri"
                   value={cosmosUri}
                   onChange={(e) => setCosmosUri(e.target.value)}
+                  placeholder="https://your-account.documents.azure.com:443/"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cosmos-key">Primary Key</Label>
+                <Label htmlFor="cosmosKey">Primary Key</Label>
                 <Input
-                  id="cosmos-key"
+                  id="cosmosKey"
                   type="password"
-                  placeholder="Your primary key"
                   value={cosmosKey}
                   onChange={(e) => setCosmosKey(e.target.value)}
+                  placeholder="••••••••"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cosmos-database">Database</Label>
+                <Label htmlFor="cosmosDatabase">Database</Label>
                 <Input
-                  id="cosmos-database"
-                  placeholder="database_name"
+                  id="cosmosDatabase"
                   value={cosmosDatabase}
                   onChange={(e) => setCosmosDatabase(e.target.value)}
+                  placeholder="your-database"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cosmos-container">Container</Label>
+                <Label htmlFor="cosmosContainer">Container</Label>
                 <Input
-                  id="cosmos-container"
-                  placeholder="container_name"
+                  id="cosmosContainer"
                   value={cosmosContainer}
                   onChange={(e) => setCosmosContainer(e.target.value)}
+                  placeholder="your-container"
                 />
               </div>
-            </div>
+            </>
           )}
 
           {dataSourceType === "powerbi" && (
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="text-sm font-medium">Power BI Configuration</h3>
+            <>
               <div className="space-y-2">
-                <Label htmlFor="tenant-id">Tenant ID</Label>
+                <Label htmlFor="tenantId">Tenant ID</Label>
                 <Input
-                  id="tenant-id"
-                  placeholder="Your tenant ID"
+                  id="tenantId"
                   value={tenantId}
                   onChange={(e) => setTenantId(e.target.value)}
+                  placeholder="your-tenant-id"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="client-id">Client ID</Label>
+                <Label htmlFor="clientId">Client ID</Label>
                 <Input
-                  id="client-id"
-                  placeholder="Your client ID"
+                  id="clientId"
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
+                  placeholder="your-client-id"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="client-secret">Client Secret</Label>
+                <Label htmlFor="clientSecret">Client Secret</Label>
                 <Input
-                  id="client-secret"
+                  id="clientSecret"
                   type="password"
-                  placeholder="Your client secret"
                   value={clientSecret}
                   onChange={(e) => setClientSecret(e.target.value)}
+                  placeholder="••••••••"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="workspace-id">Workspace ID</Label>
+                <Label htmlFor="workspaceId">Workspace ID</Label>
                 <Input
-                  id="workspace-id"
-                  placeholder="Your workspace ID"
+                  id="workspaceId"
                   value={workspaceId}
                   onChange={(e) => setWorkspaceId(e.target.value)}
+                  placeholder="your-workspace-id"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dataset-id">Dataset ID</Label>
+                <Label htmlFor="datasetId">Dataset ID</Label>
                 <Input
-                  id="dataset-id"
-                  placeholder="Your dataset ID"
+                  id="datasetId"
                   value={datasetId}
                   onChange={(e) => setDatasetId(e.target.value)}
+                  placeholder="your-dataset-id"
                 />
               </div>
+            </>
+          )}
+
+          {dataSourceType === "textdata" && (
+            <div className="space-y-2">
+              <Label>Upload PDF Files</Label>
+              <div className="flex items-center gap-2">
+                <FileUploadButton onFileSelect={(file) => {
+                  if (file.type === "application/pdf") {
+                    setUploadedFiles([...uploadedFiles, file]);
+                  } else {
+                    toast({
+                      title: "Invalid file type",
+                      description: "Please upload PDF files only",
+                      variant: "destructive",
+                    });
+                  }
+                }} />
+                <span className="text-sm text-muted-foreground">
+                  {uploadedFiles.length} file(s) uploaded
+                </span>
+              </div>
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {uploadedFiles.map((file, idx) => (
+                    <div key={idx} className="text-sm flex items-center justify-between bg-muted p-2 rounded">
+                      <span>{file.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          <Button onClick={handleSave} disabled={loading} className="w-full">
-            {loading ? "Saving..." : "Save Data Source"}
-          </Button>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? "Saving..." : editingSource ? "Update" : "Add"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
