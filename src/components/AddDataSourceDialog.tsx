@@ -132,7 +132,7 @@ export function AddDataSourceDialog({ open, onOpenChange }: AddDataSourceDialogP
         };
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("data_sources")
         .insert({
           user_id: user.id,
