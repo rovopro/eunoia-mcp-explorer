@@ -11,15 +11,14 @@ const corsHeaders = {
 async function generateAuthToken(
   verb: string,
   resourceType: string,
-  resourceId: string,
+  resourceLink: string,
   date: string,
   masterKey: string
 ): Promise<string> {
-  const key = masterKey;
-  const text = `${verb}\n${resourceType}\n${resourceId}\n${date.toLowerCase()}\n\n`;
+  const text = `${verb.toLowerCase()}\n${resourceType.toLowerCase()}\n${resourceLink}\n${date.toLowerCase()}\n\n`;
   
   const encoder = new TextEncoder();
-  const keyData = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+  const keyData = Uint8Array.from(atob(masterKey), c => c.charCodeAt(0));
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
     keyData,
@@ -35,7 +34,7 @@ async function generateAuthToken(
   );
   
   const signatureBase64 = encodeBase64(new Uint8Array(signature));
-  return encodeURIComponent(`type=master&ver=1.0&sig=${signatureBase64}`);
+  return `type=master&ver=1.0&sig=${signatureBase64}`;
 }
 
 serve(async (req) => {
@@ -130,18 +129,18 @@ serve(async (req) => {
     console.log('Generated Cosmos SQL:', cosmosQuery);
 
     // Query Cosmos DB using REST API
-    const resourceType = 'docs';
-    const resourceId = `dbs/${COSMOS_DATABASE}/colls/${COSMOS_CONTAINER}`;
     const date = new Date().toUTCString();
+    const resourceType = 'docs';
+    const resourceLink = `dbs/${COSMOS_DATABASE}/colls/${COSMOS_CONTAINER}`;
     
-    const authToken = await generateAuthToken('POST', resourceType, resourceId, date, COSMOS_KEY);
-    const endpoint = `${COSMOS_URI}/dbs/${COSMOS_DATABASE}/colls/${COSMOS_CONTAINER}/docs`;
+    const authToken = await generateAuthToken('post', resourceType, resourceLink, date, COSMOS_KEY);
+    const endpoint = `${COSMOS_URI}/${resourceLink}/docs`;
     
     const cosmosResponse = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': authToken,
-        'Content-Type': 'application/query+json',
+        'authorization': authToken,
+        'content-type': 'application/query+json',
         'x-ms-date': date,
         'x-ms-version': '2018-12-31',
         'x-ms-documentdb-isquery': 'true',
