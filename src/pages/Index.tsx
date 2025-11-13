@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavLink } from "@/components/NavLink";
 import mcpLogo from "@/assets/mcp-logo.png";
 import { AddDataSourceDialog } from "@/components/AddDataSourceDialog";
-import { DataSourcesList } from "@/components/DataSourcesList";
+import { DataSourcesDropdown } from "@/components/DataSourcesDropdown";
 import { ChatInterface } from "@/components/ChatInterface";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [dataSources, setDataSources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingSource, setEditingSource] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -67,7 +68,13 @@ const Index = () => {
 
   const handleDataSourceAdded = () => {
     setDialogOpen(false);
+    setEditingSource(null);
     fetchDataSources();
+  };
+
+  const handleEditDataSource = (source: any) => {
+    setEditingSource(source);
+    setDialogOpen(true);
   };
 
   if (!user) return null;
@@ -100,13 +107,26 @@ const Index = () => {
         <div className="w-full space-y-6">
           {/* Data Sources Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Data Sources</h2>
-                <p className="text-muted-foreground">Manage your connected data sources</p>
-              </div>
+            <div className="flex items-center justify-between gap-4">
+              {dataSources.length > 0 ? (
+                <div className="flex-1 max-w-md">
+                  <DataSourcesDropdown
+                    dataSources={dataSources}
+                    onDataSourceDeleted={fetchDataSources}
+                    onEditDataSource={handleEditDataSource}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-2xl font-bold">Data Sources</h2>
+                  <p className="text-muted-foreground">Get started by adding your first data source</p>
+                </div>
+              )}
               <Button
-                onClick={() => setDialogOpen(true)}
+                onClick={() => {
+                  setEditingSource(null);
+                  setDialogOpen(true);
+                }}
                 className="gap-2 bg-gradient-primary hover:opacity-90 transition-smooth"
               >
                 <Plus className="h-4 w-4" />
@@ -114,9 +134,7 @@ const Index = () => {
               </Button>
             </div>
 
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading...</div>
-            ) : dataSources.length === 0 ? (
+            {!loading && dataSources.length === 0 && (
               <div className="bg-muted/30 rounded-xl p-8 text-center animate-fade-in">
                 <div className="flex justify-center mb-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-secondary p-2">
@@ -124,22 +142,10 @@ const Index = () => {
                   </div>
                 </div>
                 <h3 className="text-lg font-medium mb-2">No data sources yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Get started by adding your first data source
+                <p className="text-muted-foreground">
+                  Click the button above to add your first data source
                 </p>
-                <Button
-                  onClick={() => setDialogOpen(true)}
-                  className="gap-2 bg-gradient-primary hover:opacity-90 transition-smooth"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Data Source
-                </Button>
               </div>
-            ) : (
-              <DataSourcesList
-                dataSources={dataSources}
-                onDataSourceDeleted={fetchDataSources}
-              />
             )}
           </div>
 
@@ -154,7 +160,12 @@ const Index = () => {
 
       <AddDataSourceDialog 
         open={dialogOpen} 
-        onOpenChange={setDialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditingSource(null);
+        }}
+        editingSource={editingSource}
+        onSaved={handleDataSourceAdded}
       />
     </div>
   );
