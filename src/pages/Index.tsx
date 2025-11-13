@@ -123,7 +123,7 @@ const Index = () => {
       </header>
 
       {/* Main Chat Area */}
-      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-5xl">
+      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-4xl">
         {/* Welcome Section (shows when no messages) */}
         {messages.length === 1 && (
           <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 mb-8">
@@ -155,7 +155,7 @@ const Index = () => {
                   <Sparkles className="h-4 w-4 text-secondary-foreground animate-pulse" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Analyzing data sources...</p>
+                  <p className="text-sm text-muted-foreground">Thinking and Gathering Data for the best possible Answer...</p>
                 </div>
               </div>
             )}
