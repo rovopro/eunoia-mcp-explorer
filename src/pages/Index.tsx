@@ -8,62 +8,31 @@ import mcpLogo from "@/assets/mcp-logo.png";
 import { AddDataSourceDialog } from "@/components/AddDataSourceDialog";
 import { DataSourcesDropdown } from "@/components/DataSourcesDropdown";
 import { ChatInterface } from "@/components/ChatInterface";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [dataSources, setDataSources] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [editingSource, setEditingSource] = useState<any>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-        fetchDataSources();
-      }
-    });
+    fetchDataSources();
+  }, []);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-        fetchDataSources();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const fetchDataSources = async () => {
+  const fetchDataSources = () => {
     try {
-      const { data, error } = await (supabase as any)
-        .from("data_sources")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setDataSources(data || []);
+      const storedDataSources = JSON.parse(localStorage.getItem("dataSources") || "[]");
+      setDataSources(storedDataSources);
     } catch (error: any) {
       console.error("Error fetching data sources:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully",
-    });
+  const handleLogout = () => {
+    // Logout functionality will be implemented later
+    localStorage.clear();
+    navigate("/auth");
   };
 
   const handleDataSourceAdded = () => {
@@ -77,7 +46,7 @@ const Index = () => {
     setDialogOpen(true);
   };
 
-  if (!user) return null;
+  
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
