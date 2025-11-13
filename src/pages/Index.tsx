@@ -6,18 +6,22 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavLink } from "@/components/NavLink";
 import mcpLogo from "@/assets/mcp-logo.png";
 import { AddDataSourceDialog } from "@/components/AddDataSourceDialog";
-import { DataSourcesDropdown } from "@/components/DataSourcesDropdown";
+import { DataSourcesDropdown, DataSource } from "@/components/DataSourcesDropdown";
 import { ChatInterface } from "@/components/ChatInterface";
+import { ChatSidebar, Chat } from "@/components/ChatSidebar";
 
 const Index = () => {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dataSources, setDataSources] = useState<any[]>([]);
+  const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [loading, setLoading] = useState(false);
-  const [editingSource, setEditingSource] = useState<any>(null);
+  const [editingSource, setEditingSource] = useState<DataSource | null>(null);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDataSources();
+    fetchChats();
   }, []);
 
   const fetchDataSources = () => {
@@ -27,6 +31,23 @@ const Index = () => {
     } catch (error: any) {
       console.error("Error fetching data sources:", error);
     }
+  };
+
+  const fetchChats = () => {
+    try {
+      const storedChats = JSON.parse(localStorage.getItem("chats") || "[]");
+      setChats(storedChats);
+      if (storedChats.length > 0 && !currentChatId) {
+        setCurrentChatId(storedChats[0].id);
+      }
+    } catch (error: any) {
+      console.error("Error fetching chats:", error);
+    }
+  };
+
+  const saveChats = (updatedChats: Chat[]) => {
+    localStorage.setItem("chats", JSON.stringify(updatedChats));
+    setChats(updatedChats);
   };
 
   const handleLogout = () => {
@@ -41,17 +62,73 @@ const Index = () => {
     fetchDataSources();
   };
 
-  const handleEditDataSource = (source: any) => {
+  const handleEditDataSource = (source: DataSource) => {
     setEditingSource(source);
     setDialogOpen(true);
   };
 
+  const handleToggleDataSource = (id: string, enabled: boolean) => {
+    const updatedDataSources = dataSources.map(ds =>
+      ds.id === id ? { ...ds, isEnabled: enabled } : ds
+    );
+    localStorage.setItem("dataSources", JSON.stringify(updatedDataSources));
+    setDataSources(updatedDataSources);
+  };
+
+  const handleNewChat = () => {
+    const newChat: Chat = {
+      id: crypto.randomUUID(),
+      name: `Chat ${new Date().toLocaleDateString()}`,
+      createdAt: new Date().toISOString(),
+      isFavorite: false,
+      messages: [],
+    };
+    const updatedChats = [newChat, ...chats];
+    saveChats(updatedChats);
+    setCurrentChatId(newChat.id);
+  };
+
+  const handleSelectChat = (chatId: string) => {
+    setCurrentChatId(chatId);
+  };
+
+  const handleUpdateChat = (chatId: string, updates: Partial<Chat>) => {
+    const updatedChats = chats.map(chat =>
+      chat.id === chatId ? { ...chat, ...updates } : chat
+    );
+    saveChats(updatedChats);
+  };
+
+  const handleDeleteChat = (chatId: string) => {
+    const updatedChats = chats.filter(chat => chat.id !== chatId);
+    saveChats(updatedChats);
+    if (currentChatId === chatId && updatedChats.length > 0) {
+      setCurrentChatId(updatedChats[0].id);
+    } else if (updatedChats.length === 0) {
+      setCurrentChatId(null);
+    }
+  };
+
+  const handleSendMessage = (message: string) => {
+    // This will be handled by ChatInterface
+  };
+
+  const handleUpdateMessages = (messages: any[]) => {
+    if (!currentChatId) return;
+    const updatedChats = chats.map(chat =>
+      chat.id === currentChatId ? { ...chat, messages } : chat
+    );
+    saveChats(updatedChats);
+  };
+
+  const currentChat = chats.find(chat => chat.id === currentChatId);
+
   
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm z-10 flex-shrink-0">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={mcpLogo} alt="MCP Logo" className="h-8 w-8" />
@@ -72,8 +149,21 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
-        <div className="w-full space-y-6">
+      <main className="flex-1 flex overflow-hidden">
+        {/* Chat Sidebar */}
+        {dataSources.length > 0 && (
+          <ChatSidebar
+            chats={chats}
+            currentChatId={currentChatId}
+            onSelectChat={handleSelectChat}
+            onNewChat={handleNewChat}
+            onUpdateChat={handleUpdateChat}
+            onDeleteChat={handleDeleteChat}
+          />
+        )}
+
+        <div className="flex-1 container mx-auto px-4 py-8 max-w-6xl overflow-auto">
+          <div className="w-full space-y-6">
           {/* Data Sources Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
@@ -83,6 +173,7 @@ const Index = () => {
                     dataSources={dataSources}
                     onDataSourceDeleted={fetchDataSources}
                     onEditDataSource={handleEditDataSource}
+                    onToggleEnabled={handleToggleDataSource}
                   />
                 </div>
               ) : (
@@ -118,16 +209,31 @@ const Index = () => {
             )}
           </div>
 
-          {/* Chat Interface - Only show if there are data sources */}
-          {dataSources.length > 0 && (
-            <div className="animate-fade-in">
-              <ChatInterface />
-            </div>
-          )}
+            {/* Chat Interface - Only show if there are data sources and a current chat */}
+            {dataSources.length > 0 && currentChat && (
+              <div className="animate-fade-in">
+                <ChatInterface
+                  chatId={currentChat.id}
+                  messages={currentChat.messages}
+                  onSendMessage={handleSendMessage}
+                  onUpdateMessages={handleUpdateMessages}
+                />
+              </div>
+            )}
+
+            {dataSources.length > 0 && !currentChat && (
+              <div className="bg-muted/30 rounded-xl p-8 text-center animate-fade-in">
+                <h3 className="text-lg font-medium mb-2">No chat selected</h3>
+                <p className="text-muted-foreground">
+                  Create a new chat to get started
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
-      <AddDataSourceDialog 
+      <AddDataSourceDialog
         open={dialogOpen} 
         onOpenChange={(open) => {
           setDialogOpen(open);

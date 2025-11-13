@@ -7,26 +7,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Edit, Trash2, Database } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
-interface DataSource {
+export interface DataSource {
   id: string;
   name: string;
   type: string;
   credentials: any;
   created_at: string;
+  isEnabled: boolean;
 }
 
 interface DataSourcesDropdownProps {
   dataSources: DataSource[];
   onDataSourceDeleted: () => void;
   onEditDataSource: (source: DataSource) => void;
+  onToggleEnabled: (id: string, enabled: boolean) => void;
 }
 
 export function DataSourcesDropdown({
   dataSources,
   onDataSourceDeleted,
   onEditDataSource,
+  onToggleEnabled,
 }: DataSourcesDropdownProps) {
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -68,6 +72,8 @@ export function DataSourcesDropdown({
         return "Cosmos DB";
       case "powerbi":
         return "Power BI";
+      case "textdata":
+        return "Text Data";
       default:
         return type;
     }
@@ -81,6 +87,8 @@ export function DataSourcesDropdown({
         return "text-purple-500";
       case "powerbi":
         return "text-yellow-500";
+      case "textdata":
+        return "text-green-500";
       default:
         return "text-gray-500";
     }
@@ -105,6 +113,13 @@ export function DataSourcesDropdown({
             onSelect={(e) => e.preventDefault()}
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Checkbox
+                checked={source.isEnabled}
+                onCheckedChange={(checked) => {
+                  onToggleEnabled(source.id, checked as boolean);
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
               <div className={`text-sm font-medium ${getTypeColor(source.type)}`}>
                 {getTypeLabel(source.type)}
               </div>
