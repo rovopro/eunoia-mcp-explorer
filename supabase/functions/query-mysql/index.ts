@@ -87,6 +87,7 @@ serve(async (req) => {
     console.log('Generated SQL:', sqlQuery);
 
     // Connect to MySQL
+    // Note: SSL connection attempts with various configurations
     const client = await new Client().connect({
       hostname: Deno.env.get("MYSQL_HOST") || "",
       port: parseInt(Deno.env.get("MYSQL_PORT") || "3306"),
