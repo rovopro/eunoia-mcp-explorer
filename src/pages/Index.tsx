@@ -94,13 +94,15 @@ const Index = () => {
     }
 
     try {
-      // Call the MySQL query edge function
-      const { data, error } = await supabase.functions.invoke('query-mysql', {
+      // Determine which function to call based on data source
+      const functionName = dataSource === 'cosmos' ? 'query-cosmos' : 'query-mysql';
+      
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { query: userQuery, dataSource }
       });
 
       if (error) {
-        console.error('Error calling query-mysql:', error);
+        console.error(`Error calling ${functionName}:`, error);
         throw error;
       }
 
