@@ -12,7 +12,6 @@ import { NavLink } from "@/components/NavLink";
 import { OnboardingNotification } from "@/components/OnboardingNotification";
 import eunoiaLogo from "@/assets/eunoia-logo-dark.webp";
 import mcpLogo from "@/assets/mcp-logo.png";
-import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   role: "user" | "assistant";
@@ -40,7 +39,6 @@ const Index = () => {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [trainingComplete, setTrainingComplete] = useState(false);
   const [notification, setNotification] = useState<string | null>("Start by selecting a data source");
-  const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +46,16 @@ const Index = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // Auto-dismiss notifications after 5 seconds
+  useEffect(() => {
+    if (notification && trainingComplete) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification, trainingComplete]);
 
   useEffect(() => {
     if (dataSource && !trainingComplete) {
@@ -61,11 +69,7 @@ const Index = () => {
     setDataSource("all");
     setAttachedFile(null);
     setTrainingComplete(false);
-    setNotification("Start by selecting a data source");
-    toast({
-      title: "Chat ended",
-      description: "Starting a new conversation",
-    });
+    setNotification("Chat ended. Starting a new conversation");
   };
 
   const handleSend = async () => {
@@ -180,8 +184,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Onboarding Notification */}
-      {notification && !trainingComplete && (
+      {/* Notification */}
+      {notification && (
         <OnboardingNotification
           message={notification}
           onDismiss={() => setNotification(null)}
