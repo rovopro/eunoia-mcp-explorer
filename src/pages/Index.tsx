@@ -10,6 +10,7 @@ import { GoldenQuestionsDropdown } from "@/components/GoldenQuestionsDropdown";
 import { FileUploadButton } from "@/components/FileUploadButton";
 import { NavLink } from "@/components/NavLink";
 import { OnboardingNotification } from "@/components/OnboardingNotification";
+import { supabase } from "@/integrations/supabase/client";
 import eunoiaLogo from "@/assets/eunoia-logo-dark.webp";
 import mcpLogo from "@/assets/mcp-logo.png";
 
@@ -82,6 +83,7 @@ const Index = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const userQuery = input;
     setInput("");
     setIsLoading(true);
     
@@ -91,19 +93,50 @@ const Index = () => {
       setNotification(null);
     }
 
-    // Simulate MCP processing
-    setTimeout(() => {
-      const response = generateMockResponse(input, dataSource, attachedFile);
+    try {
+      // Call the MySQL query edge function
+      const { data, error } = await supabase.functions.invoke('query-mysql', {
+        body: { query: userQuery, dataSource }
+      });
+
+      if (error) {
+        console.error('Error calling query-mysql:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to query database');
+      }
+
+      // Format the response
+      let responseContent = data.explanation || 'Here are the results from your query:';
+      if (data.data && data.data.length > 0) {
+        responseContent += `\n\nFound ${data.data.length} result(s).`;
+      }
+
       const assistantMessage: Message = {
         role: "assistant",
-        content: response.content,
-        chartData: response.chartData,
+        content: responseContent,
+        chartData: data.chartType && data.data && data.data.length > 0 ? {
+          type: data.chartType,
+          data: data.data,
+          title: userQuery
+        } : undefined,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error:', error);
+      const errorMessage: Message = {
+        role: "assistant",
+        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
       setAttachedFile(null);
-    }, 1500);
+    }
   };
 
   const generateMockResponse = (query: string, source: string, file: File | null): { content: string; chartData?: any } => {
