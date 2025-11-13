@@ -180,6 +180,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Onboarding Notification */}
+      {notification && !trainingComplete && (
+        <OnboardingNotification
+          message={notification}
+          onDismiss={() => setNotification(null)}
+        />
+      )}
+      
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -217,14 +225,6 @@ const Index = () => {
               <div className="absolute inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-full"></div>
               <img src={mcpLogo} alt="MCP Logo" className="h-24 w-24 relative animate-pulse" />
             </div>
-            
-            {/* Onboarding Notification */}
-            {notification && !trainingComplete && (
-              <OnboardingNotification
-                message={notification}
-                onDismiss={() => setNotification(null)}
-              />
-            )}
             
             <div className="space-y-1 animate-fade-in" style={{ animationDelay: "0.2s" }}>
               <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
