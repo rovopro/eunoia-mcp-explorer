@@ -13,8 +13,8 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 p-4 rounded-xl transition-smooth animate-in fade-in slide-in-from-bottom-2",
-        isUser ? "bg-gradient-primary text-primary-foreground ml-8" : "bg-card mr-8"
+        "flex gap-3 p-4 rounded-xl transition-smooth animate-fade-in",
+        isUser ? "bg-gradient-primary text-primary-foreground ml-8" : "bg-muted/30 mr-8"
       )}
     >
       <div

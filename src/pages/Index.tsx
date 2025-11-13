@@ -8,7 +8,9 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { DataSourceSelector } from "@/components/DataSourceSelector";
 import { GoldenQuestionsDropdown } from "@/components/GoldenQuestionsDropdown";
 import { FileUploadButton } from "@/components/FileUploadButton";
+import { NavLink } from "@/components/NavLink";
 import eunoiaLogo from "@/assets/eunoia-logo-dark.webp";
+import mcpLogo from "@/assets/mcp-logo.png";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -118,7 +120,10 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">My Cute Pony - Powered by Model Context Protocol</p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <NavLink to="/faq">FAQ</NavLink>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -126,12 +131,12 @@ const Index = () => {
       <main className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-4xl">
         {/* Welcome Section (shows when no messages) */}
         {messages.length === 1 && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 mb-8">
-            <div className="relative">
+          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 mb-8 animate-fade-in">
+            <div className="relative animate-scale-in">
               <div className="absolute inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-full"></div>
-              <Sparkles className="h-20 w-20 text-primary relative" />
+              <img src={mcpLogo} alt="MCP Logo" className="h-32 w-32 relative animate-pulse" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.2s" }}>
               <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Welcome to MCP Data Researcher
               </h2>
