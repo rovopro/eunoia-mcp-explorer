@@ -60,7 +60,7 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-[600px] border rounded-xl bg-card">
+    <div className="flex flex-col h-[400px] border rounded-xl bg-card">
       <div className="border-b p-4">
         <h2 className="text-lg font-semibold">Chat</h2>
         <p className="text-sm text-muted-foreground">Ask questions about your data</p>

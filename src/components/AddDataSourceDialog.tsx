@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,19 @@ import { useToast } from "@/hooks/use-toast";
 interface AddDataSourceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editingSource?: {
+    id: string;
+    name: string;
+    type: string;
+    credentials: any;
+  } | null;
+  onSaved: () => void;
 }
 
-export function AddDataSourceDialog({ open, onOpenChange }: AddDataSourceDialogProps) {
+export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved }: AddDataSourceDialogProps) {
   const { toast } = useToast();
-  const [dataSourceType, setDataSourceType] = useState<string>("");
-  const [name, setName] = useState("");
+  const [dataSourceType, setDataSourceType] = useState<string>(editingSource?.type || "");
+  const [name, setName] = useState(editingSource?.name || "");
   const [loading, setLoading] = useState(false);
 
   // MySQL fields
@@ -37,6 +44,35 @@ export function AddDataSourceDialog({ open, onOpenChange }: AddDataSourceDialogP
   const [clientSecret, setClientSecret] = useState("");
   const [workspaceId, setWorkspaceId] = useState("");
   const [datasetId, setDatasetId] = useState("");
+
+  useEffect(() => {
+    if (editingSource) {
+      setDataSourceType(editingSource.type);
+      setName(editingSource.name);
+      const creds = editingSource.credentials;
+      
+      if (editingSource.type === "mysql") {
+        setMysqlHost(creds.host || "");
+        setMysqlPort(creds.port || "");
+        setMysqlDatabase(creds.database || "");
+        setMysqlUser(creds.user || "");
+        setMysqlPassword(creds.password || "");
+      } else if (editingSource.type === "cosmos") {
+        setCosmosUri(creds.uri || "");
+        setCosmosKey(creds.key || "");
+        setCosmosDatabase(creds.database || "");
+        setCosmosContainer(creds.container || "");
+      } else if (editingSource.type === "powerbi") {
+        setTenantId(creds.tenantId || "");
+        setClientId(creds.clientId || "");
+        setClientSecret(creds.clientSecret || "");
+        setWorkspaceId(creds.workspaceId || "");
+        setDatasetId(creds.datasetId || "");
+      }
+    } else {
+      resetForm();
+    }
+  }, [editingSource, open]);
 
   const resetForm = () => {
     setDataSourceType("");
@@ -132,23 +168,44 @@ export function AddDataSourceDialog({ open, onOpenChange }: AddDataSourceDialogP
         };
       }
 
-      const { error } = await (supabase as any)
-        .from("data_sources")
-        .insert({
-          user_id: user.id,
-          name,
-          type: dataSourceType,
-          credentials,
+      if (editingSource) {
+        // Update existing data source
+        const { error } = await (supabase as any)
+          .from("data_sources")
+          .update({
+            name,
+            type: dataSourceType,
+            credentials,
+          })
+          .eq("id", editingSource.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Data source updated successfully",
         });
+      } else {
+        // Create new data source
+        const { error } = await (supabase as any)
+          .from("data_sources")
+          .insert({
+            user_id: user.id,
+            name,
+            type: dataSourceType,
+            credentials,
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Data source added successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Data source added successfully",
+        });
+      }
 
       resetForm();
+      onSaved();
       onOpenChange(false);
     } catch (error: any) {
       toast({
@@ -164,9 +221,9 @@ export function AddDataSourceDialog({ open, onOpenChange }: AddDataSourceDialogP
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add Data Source</DialogTitle>
-        </DialogHeader>
+      <DialogHeader>
+        <DialogTitle>{editingSource ? "Edit Data Source" : "Add Data Source"}</DialogTitle>
+      </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
