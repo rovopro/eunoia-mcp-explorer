@@ -9,9 +9,11 @@ import { DataSourceSelector } from "@/components/DataSourceSelector";
 import { GoldenQuestionsDropdown } from "@/components/GoldenQuestionsDropdown";
 import { FileUploadButton } from "@/components/FileUploadButton";
 import { NavLink } from "@/components/NavLink";
+import { OnboardingNotification } from "@/components/OnboardingNotification";
 import eunoiaLogo from "@/assets/eunoia-logo-dark.webp";
 import mcpLogo from "@/assets/mcp-logo.png";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 interface Message {
   role: "user" | "assistant";
@@ -32,7 +34,15 @@ const Index = () => {
   const [dataSource, setDataSource] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [trainingComplete, setTrainingComplete] = useState(false);
+  const [notification, setNotification] = useState<string | null>("Start by selecting a data source");
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (dataSource && !trainingComplete) {
+      setNotification("Type your question or select one from the list");
+    }
+  }, [dataSource, trainingComplete]);
 
   const handleSend = async () => {
     if (!input.trim() && !attachedFile) return;
@@ -46,6 +56,12 @@ const Index = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    
+    // Mark training as complete after first message
+    if (!trainingComplete) {
+      setTrainingComplete(true);
+      setNotification(null);
+    }
 
     // Simulate MCP processing
     setTimeout(() => {
@@ -91,10 +107,6 @@ const Index = () => {
 
   const handleQuestionSelect = (question: string) => {
     setInput(question);
-    toast({
-      title: "Question selected",
-      description: "Press Send to execute the query",
-    });
   };
 
   const handleFileSelect = (file: File) => {
@@ -110,6 +122,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Onboarding Notification */}
+      {notification && !trainingComplete && (
+        <OnboardingNotification
+          message={notification}
+          onDismiss={() => setNotification(null)}
+        />
+      )}
+      
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
