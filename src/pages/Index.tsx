@@ -122,14 +122,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Onboarding Notification */}
-      {notification && !trainingComplete && (
-        <OnboardingNotification
-          message={notification}
-          onDismiss={() => setNotification(null)}
-        />
-      )}
-      
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -148,19 +140,28 @@ const Index = () => {
       </header>
 
       {/* Main Chat Area */}
-      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-4xl">
+      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-3xl">
         {/* Welcome Section (shows when no messages) */}
         {messages.length === 1 && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 mb-8 animate-fade-in">
+          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 mb-6 animate-fade-in">
             <div className="relative animate-scale-in">
               <div className="absolute inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-full"></div>
-              <img src={mcpLogo} alt="MCP Logo" className="h-32 w-32 relative animate-pulse" />
+              <img src={mcpLogo} alt="MCP Logo" className="h-24 w-24 relative animate-pulse" />
             </div>
-            <div className="space-y-2 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            
+            {/* Onboarding Notification */}
+            {notification && !trainingComplete && (
+              <OnboardingNotification
+                message={notification}
+                onDismiss={() => setNotification(null)}
+              />
+            )}
+            
+            <div className="space-y-1 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+              <h2 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Welcome to MCP Data Researcher
               </h2>
-              <p className="text-muted-foreground max-w-xl">
+              <p className="text-muted-foreground text-sm max-w-lg">
                 Ask questions across multiple data sources. I'll discover, query, and present insights from MySQL,
                 Power BI, Cosmos DB, and more.
               </p>

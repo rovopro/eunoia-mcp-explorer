@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { Bot, User } from "lucide-react";
+import { User } from "lucide-react";
+import mcpLogo from "@/assets/mcp-logo.png";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -20,13 +21,13 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
       <div
         className={cn(
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-smooth",
-          isUser ? "bg-white/20" : "bg-gradient-secondary"
+          isUser ? "bg-white/20" : "bg-gradient-secondary p-1"
         )}
       >
         {isUser ? (
           <User className="h-4 w-4" />
         ) : (
-          <Bot className="h-4 w-4 text-secondary-foreground" />
+          <img src={mcpLogo} alt="MCP" className="h-full w-full object-contain" />
         )}
       </div>
       <div className="flex-1 space-y-2">
