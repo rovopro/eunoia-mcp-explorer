@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Sparkles, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,23 +13,27 @@ import { OnboardingNotification } from "@/components/OnboardingNotification";
 import eunoiaLogo from "@/assets/eunoia-logo-dark.webp";
 import mcpLogo from "@/assets/mcp-logo.png";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  chartData?: {
+    type: "bar" | "line" | "pie";
+    data: any[];
+    title?: string;
+  };
 }
 
 const Index = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hello! I'm MCP (My Cute Pony) Data Researcher. I can help you discover insights across multiple data sources including MySQL EPOS Database, Power BI models, and Cosmos NoSQL. Ask me anything or select a quick question to get started!",
-      timestamp: new Date(),
-    },
-  ]);
+  const initialMessage: Message = {
+    role: "assistant",
+    content:
+      "Hello! I'm MCP (My Cute Pony) Data Researcher. I can help you discover insights across multiple data sources including MySQL EPOS Database, Power BI models, and Cosmos NoSQL. Ask me anything or select a quick question to get started!",
+    timestamp: new Date(),
+  };
+  
+  const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [input, setInput] = useState("");
   const [dataSource, setDataSource] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
@@ -37,12 +41,32 @@ const Index = () => {
   const [trainingComplete, setTrainingComplete] = useState(false);
   const [notification, setNotification] = useState<string | null>("Start by selecting a data source");
   const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   useEffect(() => {
     if (dataSource && !trainingComplete) {
       setNotification("Type your question or select one from the list");
     }
   }, [dataSource, trainingComplete]);
+
+  const handleEndChat = () => {
+    setMessages([initialMessage]);
+    setInput("");
+    setDataSource("all");
+    setAttachedFile(null);
+    setTrainingComplete(false);
+    setNotification("Start by selecting a data source");
+    toast({
+      title: "Chat ended",
+      description: "Starting a new conversation",
+    });
+  };
 
   const handleSend = async () => {
     if (!input.trim() && !attachedFile) return;
@@ -65,10 +89,11 @@ const Index = () => {
 
     // Simulate MCP processing
     setTimeout(() => {
-      const responseContent = generateMockResponse(input, dataSource, attachedFile);
+      const response = generateMockResponse(input, dataSource, attachedFile);
       const assistantMessage: Message = {
         role: "assistant",
-        content: responseContent,
+        content: response.content,
+        chartData: response.chartData,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -77,7 +102,7 @@ const Index = () => {
     }, 1500);
   };
 
-  const generateMockResponse = (query: string, source: string, file: File | null): string => {
+  const generateMockResponse = (query: string, source: string, file: File | null): { content: string; chartData?: any } => {
     const sourceText = source === "all" ? "all data sources" : source.toUpperCase();
     let response = `I've analyzed your query across ${sourceText}.\n\n`;
 
@@ -90,19 +115,52 @@ const Index = () => {
     response += `📊 **Query Execution**: Retrieved and structured data from connected systems\n`;
     response += `💡 **Insights**: `;
 
+    let chartData;
+
     if (query.toLowerCase().includes("sales")) {
-      response += "Total sales for Q4 2024: $2.4M (15% increase YoY)\nTop category: Electronics with $890K in revenue";
+      response += "Total sales for Q4 2024: $2.4M (15% increase YoY)\nTop category: Electronics with $890K in revenue\n\nHere's a breakdown by category:";
+      chartData = {
+        type: "bar" as const,
+        title: "Sales by Category (Q4 2024)",
+        data: [
+          { name: "Electronics", value: 890000 },
+          { name: "Furniture", value: 650000 },
+          { name: "Clothing", value: 480000 },
+          { name: "Food", value: 380000 },
+        ],
+      };
     } else if (query.toLowerCase().includes("inventory")) {
-      response += "45 products require reordering\nAverage inventory turnover: 6.2 times per quarter";
+      response += "45 products require reordering\nAverage inventory turnover: 6.2 times per quarter\n\nInventory levels by category:";
+      chartData = {
+        type: "pie" as const,
+        title: "Inventory Distribution",
+        data: [
+          { name: "In Stock", value: 65 },
+          { name: "Low Stock", value: 25 },
+          { name: "Out of Stock", value: 10 },
+        ],
+      };
     } else if (query.toLowerCase().includes("customer")) {
-      response += "Active customers: 1,247\nAverage purchase frequency: 3.8 times per month\nTop segment: Premium tier (42% of revenue)";
+      response += "Active customers: 1,247\nAverage purchase frequency: 3.8 times per month\nTop segment: Premium tier (42% of revenue)\n\nCustomer growth trend:";
+      chartData = {
+        type: "line" as const,
+        title: "Customer Growth (6 Months)",
+        data: [
+          { name: "Jul", value: 980 },
+          { name: "Aug", value: 1050 },
+          { name: "Sep", value: 1120 },
+          { name: "Oct", value: 1180 },
+          { name: "Nov", value: 1230 },
+          { name: "Dec", value: 1247 },
+        ],
+      };
     } else if (query.toLowerCase().includes("supplier")) {
       response += "Top 3 suppliers by reliability: TechCorp (98%), FastShip Ltd (96%), GlobalParts (94%)";
     } else {
       response += `Successfully processed your query. The data shows interesting patterns across ${sourceText}.`;
     }
 
-    return response;
+    return { content: response, chartData };
   };
 
   const handleQuestionSelect = (question: string) => {
@@ -133,6 +191,17 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {messages.length > 1 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEndChat}
+                className="gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span className="hidden sm:inline">End Chat</span>
+              </Button>
+            )}
             <NavLink to="/faq">FAQ</NavLink>
             <ThemeToggle />
           </div>
@@ -170,7 +239,7 @@ const Index = () => {
         )}
 
         {/* Messages */}
-        <ScrollArea className="flex-1 pr-4 -mr-4">
+        <ScrollArea className="flex-1 pr-4 -mr-4" ref={scrollAreaRef}>
           <div className="space-y-4 pb-4">
             {messages.map((message, index) => (
               <ChatMessage key={index} {...message} />
@@ -185,6 +254,7 @@ const Index = () => {
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
 

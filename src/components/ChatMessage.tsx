@@ -1,14 +1,20 @@
 import { cn } from "@/lib/utils";
 import { User } from "lucide-react";
 import mcpLogo from "@/assets/mcp-logo.png";
+import { ChartMessage } from "./ChartMessage";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
   timestamp?: Date;
+  chartData?: {
+    type: "bar" | "line" | "pie";
+    data: any[];
+    title?: string;
+  };
 }
 
-export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
+export function ChatMessage({ role, content, timestamp, chartData }: ChatMessageProps) {
   const isUser = role === "user";
 
   return (
@@ -32,6 +38,7 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
       </div>
       <div className="flex-1 space-y-2">
         <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
+        {chartData && <ChartMessage {...chartData} />}
         {timestamp && (
           <p className={cn("text-xs", isUser ? "opacity-70" : "text-muted-foreground")}>
             {timestamp.toLocaleTimeString()}
