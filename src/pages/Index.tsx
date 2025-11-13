@@ -6,6 +6,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavLink } from "@/components/NavLink";
 import mcpLogo from "@/assets/mcp-logo.png";
 import { AddDataSourceDialog } from "@/components/AddDataSourceDialog";
+import { DataSourcesList } from "@/components/DataSourcesList";
+import { ChatInterface } from "@/components/ChatInterface";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,6 +16,8 @@ const Index = () => {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [dataSources, setDataSources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -21,6 +25,7 @@ const Index = () => {
         navigate("/auth");
       } else {
         setUser(session.user);
+        fetchDataSources();
       }
     });
 
@@ -29,11 +34,28 @@ const Index = () => {
         navigate("/auth");
       } else {
         setUser(session.user);
+        fetchDataSources();
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const fetchDataSources = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from("data_sources")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setDataSources(data || []);
+    } catch (error: any) {
+      console.error("Error fetching data sources:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -41,6 +63,11 @@ const Index = () => {
       title: "Logged out",
       description: "You have been logged out successfully",
     });
+  };
+
+  const handleDataSourceAdded = () => {
+    setDialogOpen(false);
+    fetchDataSources();
   };
 
   if (!user) return null;
@@ -69,37 +96,66 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-8 flex flex-col items-center justify-center max-w-4xl">
-        <div className="w-full space-y-8">
-          {/* Welcome Message */}
-          <div className="bg-muted/30 rounded-xl p-6 animate-fade-in">
-            <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-secondary p-1">
-                <img src={mcpLogo} alt="MCP" className="h-full w-full object-contain" />
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+        <div className="w-full space-y-6">
+          {/* Data Sources Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Data Sources</h2>
+                <p className="text-muted-foreground">Manage your connected data sources</p>
               </div>
-              <div className="flex-1 space-y-2">
-                <p className="text-sm leading-relaxed">
-                  Welcome to MCP Data Researcher! Get started by adding your first data source.
-                </p>
-              </div>
+              <Button
+                onClick={() => setDialogOpen(true)}
+                className="gap-2 bg-gradient-primary hover:opacity-90 transition-smooth"
+              >
+                <Plus className="h-4 w-4" />
+                Add Data Source
+              </Button>
             </div>
+
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : dataSources.length === 0 ? (
+              <div className="bg-muted/30 rounded-xl p-8 text-center animate-fade-in">
+                <div className="flex justify-center mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-secondary p-2">
+                    <img src={mcpLogo} alt="MCP" className="h-full w-full object-contain" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-medium mb-2">No data sources yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get started by adding your first data source
+                </p>
+                <Button
+                  onClick={() => setDialogOpen(true)}
+                  className="gap-2 bg-gradient-primary hover:opacity-90 transition-smooth"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Data Source
+                </Button>
+              </div>
+            ) : (
+              <DataSourcesList
+                dataSources={dataSources}
+                onDataSourceDeleted={fetchDataSources}
+              />
+            )}
           </div>
 
-          {/* Add Data Source Button */}
-          <div className="flex justify-center">
-            <Button
-              onClick={() => setDialogOpen(true)}
-              size="lg"
-              className="gap-2 bg-gradient-primary hover:opacity-90 transition-smooth"
-            >
-              <Plus className="h-5 w-5" />
-              Add Data Source
-            </Button>
-          </div>
+          {/* Chat Interface - Only show if there are data sources */}
+          {dataSources.length > 0 && (
+            <div className="animate-fade-in">
+              <ChatInterface />
+            </div>
+          )}
         </div>
       </main>
 
-      <AddDataSourceDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <AddDataSourceDialog 
+        open={dialogOpen} 
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 };
