@@ -7,7 +7,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Edit, Trash2, Database } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface DataSource {
@@ -32,16 +31,13 @@ export function DataSourcesDropdown({
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     setDeletingId(id);
     try {
-      const { error } = await (supabase as any)
-        .from("data_sources")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      const existingDataSources = JSON.parse(localStorage.getItem("dataSources") || "[]");
+      const updatedDataSources = existingDataSources.filter((ds: any) => ds.id !== id);
+      localStorage.setItem("dataSources", JSON.stringify(updatedDataSources));
 
       toast({
         title: "Success",

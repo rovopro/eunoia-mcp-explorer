@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddDataSourceDialogProps {
@@ -93,7 +92,7 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
     setDatasetId("");
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!dataSourceType || !name) {
       toast({
         title: "Error",
@@ -106,17 +105,6 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to add a data source",
-          variant: "destructive",
-        });
-        return;
-      }
-
       let credentials = {};
 
       if (dataSourceType === "mysql") {
@@ -168,18 +156,17 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
         };
       }
 
+      // Get existing data sources from localStorage
+      const existingDataSources = JSON.parse(localStorage.getItem("dataSources") || "[]");
+
       if (editingSource) {
         // Update existing data source
-        const { error } = await (supabase as any)
-          .from("data_sources")
-          .update({
-            name,
-            type: dataSourceType,
-            credentials,
-          })
-          .eq("id", editingSource.id);
-
-        if (error) throw error;
+        const updatedDataSources = existingDataSources.map((ds: any) =>
+          ds.id === editingSource.id
+            ? { ...ds, name, type: dataSourceType, credentials }
+            : ds
+        );
+        localStorage.setItem("dataSources", JSON.stringify(updatedDataSources));
 
         toast({
           title: "Success",
@@ -187,16 +174,15 @@ export function AddDataSourceDialog({ open, onOpenChange, editingSource, onSaved
         });
       } else {
         // Create new data source
-        const { error } = await (supabase as any)
-          .from("data_sources")
-          .insert({
-            user_id: user.id,
-            name,
-            type: dataSourceType,
-            credentials,
-          });
-
-        if (error) throw error;
+        const newDataSource = {
+          id: crypto.randomUUID(),
+          name,
+          type: dataSourceType,
+          credentials,
+          created_at: new Date().toISOString(),
+        };
+        existingDataSources.push(newDataSource);
+        localStorage.setItem("dataSources", JSON.stringify(existingDataSources));
 
         toast({
           title: "Success",
