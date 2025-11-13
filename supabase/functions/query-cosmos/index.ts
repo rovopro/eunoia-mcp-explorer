@@ -1,10 +1,42 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Generate Cosmos DB authorization token
+async function generateAuthToken(
+  verb: string,
+  resourceType: string,
+  resourceId: string,
+  date: string,
+  masterKey: string
+): Promise<string> {
+  const key = masterKey;
+  const text = `${verb}\n${resourceType}\n${resourceId}\n${date.toLowerCase()}\n\n`;
+  
+  const encoder = new TextEncoder();
+  const keyData = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    encoder.encode(text)
+  );
+  
+  const signatureBase64 = encodeBase64(new Uint8Array(signature));
+  return encodeURIComponent(`type=master&ver=1.0&sig=${signatureBase64}`);
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -98,16 +130,22 @@ serve(async (req) => {
     console.log('Generated Cosmos SQL:', cosmosQuery);
 
     // Query Cosmos DB using REST API
+    const resourceType = 'docs';
+    const resourceId = `dbs/${COSMOS_DATABASE}/colls/${COSMOS_CONTAINER}`;
+    const date = new Date().toUTCString();
+    
+    const authToken = await generateAuthToken('POST', resourceType, resourceId, date, COSMOS_KEY);
     const endpoint = `${COSMOS_URI}/dbs/${COSMOS_DATABASE}/colls/${COSMOS_CONTAINER}/docs`;
     
     const cosmosResponse = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': COSMOS_KEY,
+        'Authorization': authToken,
         'Content-Type': 'application/query+json',
-        'x-ms-documentdb-isquery': 'True',
+        'x-ms-date': date,
         'x-ms-version': '2018-12-31',
-        'x-ms-documentdb-query-enablecrosspartition': 'True'
+        'x-ms-documentdb-isquery': 'true',
+        'x-ms-documentdb-query-enablecrosspartition': 'true'
       },
       body: JSON.stringify({
         query: cosmosQuery,
