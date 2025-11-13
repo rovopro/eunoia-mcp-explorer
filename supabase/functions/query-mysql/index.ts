@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Client } from "https://deno.land/x/mysql@v2.12.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -86,25 +85,33 @@ serve(async (req) => {
     const sqlQuery = parsedResponse.sql;
     console.log('Generated SQL:', sqlQuery);
 
-    // Connect to MySQL
-    // Note: SSL connection attempts with various configurations
-    const client = await new Client().connect({
-      hostname: Deno.env.get("MYSQL_HOST") || "",
-      port: parseInt(Deno.env.get("MYSQL_PORT") || "3306"),
-      username: Deno.env.get("MYSQL_USER") || "",
-      password: Deno.env.get("MYSQL_PASSWORD") || "",
-      db: Deno.env.get("MYSQL_DATABASE") || "",
+    // Call MySQL proxy service
+    const MYSQL_PROXY_URL = Deno.env.get("MYSQL_PROXY_URL");
+    if (!MYSQL_PROXY_URL) {
+      throw new Error("MYSQL_PROXY_URL environment variable not configured. Please deploy the mysql-proxy-service and set this variable.");
+    }
+
+    console.log('Calling MySQL proxy service...');
+    const proxyResponse = await fetch(`${MYSQL_PROXY_URL}/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sql: sqlQuery }),
     });
 
-    console.log('Connected to MySQL, executing query...');
-    const result = await client.query(sqlQuery);
-    await client.close();
-    console.log('Query executed, rows returned:', result.length);
+    if (!proxyResponse.ok) {
+      const errorData = await proxyResponse.json();
+      throw new Error(errorData.error || 'MySQL proxy service error');
+    }
+
+    const proxyData = await proxyResponse.json();
+    console.log('Query executed, rows returned:', proxyData.rowCount);
 
     return new Response(JSON.stringify({
       success: true,
       sql: sqlQuery,
-      data: result,
+      data: proxyData.data,
       chartType: parsedResponse.chartType,
       explanation: parsedResponse.explanation
     }), {
