@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { User } from "lucide-react";
-import mcpLogo from "@/assets/mcp-logo.png";
+import ponyLogo from "@/assets/pony-logo.png";
 import { ChartMessage } from "./ChartMessage";
 
 interface ChatMessageProps {
@@ -33,7 +33,7 @@ export function ChatMessage({ role, content, timestamp, chartData }: ChatMessage
         {isUser ? (
           <User className="h-4 w-4" />
         ) : (
-          <img src={mcpLogo} alt="MCP" className="h-full w-full object-contain" />
+          <img src={ponyLogo} alt="Pony" className="h-full w-full object-contain" />
         )}
       </div>
       <div className="flex-1 space-y-2">
