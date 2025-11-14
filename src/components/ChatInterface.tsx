@@ -5,6 +5,7 @@ import { Send } from "lucide-react";
 import { ChatMessage } from "@/components/ChatMessage";
 import { FileUploadButton } from "@/components/FileUploadButton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { HorseLoader } from "@/components/HorseLoader";
 
 interface Message {
   role: "user" | "assistant";
@@ -87,13 +88,7 @@ export function ChatInterface({ chatId, messages, onSendMessage, onUpdateMessage
               timestamp={message.timestamp}
             />
           ))}
-          {isLoading && (
-            <div className="flex gap-2 items-center text-muted-foreground">
-              <div className="h-2 w-2 rounded-full bg-primary animate-bounce" />
-              <div className="h-2 w-2 rounded-full bg-primary animate-bounce delay-100" />
-              <div className="h-2 w-2 rounded-full bg-primary animate-bounce delay-200" />
-            </div>
-          )}
+          {isLoading && <HorseLoader />}
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
