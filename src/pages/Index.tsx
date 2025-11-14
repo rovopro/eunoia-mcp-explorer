@@ -139,7 +139,7 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <img src={ponyLogo} alt="Pony Logo" className="h-10 w-10" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              MCP PONY DATA RESEARCHER (v 0.1 BETA)
+              MCP PONY DATA RESEARCHER (v 0.1 ALPHA)
             </h1>
           </div>
           <nav className="flex items-center gap-4">
