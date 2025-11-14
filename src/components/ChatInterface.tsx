@@ -52,15 +52,23 @@ export function ChatInterface({ chatId, messages, onSendMessage, onUpdateMessage
     setAttachedFile(null);
     setIsLoading(true);
 
+    const startTime = Date.now();
+    const minLoadingTime = 5000; // 5 seconds minimum
+
     // Simulate AI response - Replace this with actual Azure AI Foundry integration
     setTimeout(() => {
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: "This is a placeholder response. Azure AI Foundry integration will be added later.",
-        timestamp: new Date(),
-      };
-      onUpdateMessages([...newMessages, assistantMessage]);
-      setIsLoading(false);
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+
+      setTimeout(() => {
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: "This is a placeholder response. Azure AI Foundry integration will be added later.",
+          timestamp: new Date(),
+        };
+        onUpdateMessages([...newMessages, assistantMessage]);
+        setIsLoading(false);
+      }, remainingTime);
     }, 1000);
   };
 
