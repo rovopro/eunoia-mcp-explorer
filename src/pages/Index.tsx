@@ -142,10 +142,10 @@ const Index = () => {
               MCP PONY DATA RESEARCHER (v 0.1 ALPHA)
             </h1>
           </div>
-          <nav className="flex items-center gap-4">
+          <nav className="flex items-center gap-2">
             <NavLink to="/">Home</NavLink>
-            <NavLink to="/faq">FAQ</NavLink>
             <NavLink to="#">Documentation</NavLink>
+            <NavLink to="/faq">FAQ</NavLink>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Logout
