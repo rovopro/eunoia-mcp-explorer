@@ -6,7 +6,7 @@ import { ChartMessage } from "./ChartMessage";
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
-  timestamp?: Date;
+  timestamp?: Date | number;
   chartData?: {
     type: "bar" | "line" | "pie";
     data: any[];
@@ -16,6 +16,9 @@ interface ChatMessageProps {
 
 export function ChatMessage({ role, content, timestamp, chartData }: ChatMessageProps) {
   const isUser = role === "user";
+  
+  // Convert timestamp to Date object if it's a number
+  const timestampDate = timestamp ? (typeof timestamp === 'number' ? new Date(timestamp) : timestamp) : undefined;
 
   return (
     <div
@@ -39,9 +42,9 @@ export function ChatMessage({ role, content, timestamp, chartData }: ChatMessage
       <div className="flex-1 space-y-2">
         <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
         {chartData && <ChartMessage {...chartData} />}
-        {timestamp && (
+        {timestampDate && (
           <p className={cn("text-xs", isUser ? "opacity-70" : "text-muted-foreground")}>
-            {timestamp.toLocaleTimeString()}
+            {timestampDate.toLocaleTimeString()}
           </p>
         )}
       </div>
