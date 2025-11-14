@@ -1,4 +1,4 @@
-import { Plus, Star, Edit2, Trash2 } from "lucide-react";
+import { Plus, Star, Edit2, Trash2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ export function ChatSidebar({
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleStartEdit = (chat: Chat) => {
     setEditingId(chat.id);
@@ -78,8 +79,24 @@ export function ChatSidebar({
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  if (isCollapsed) {
+    return (
+      <div className="w-12 border-r border-border bg-card/50 flex flex-col h-full relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsCollapsed(false)}
+          className="m-2 hover:bg-muted"
+          title="Show panel"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-64 border-r border-border bg-card/50 flex flex-col h-full">
+    <div className="w-64 border-r border-border bg-card/50 flex flex-col h-full relative">
       <div className="p-4 border-b border-border">
         <Button
           onClick={onNewChat}
@@ -91,7 +108,7 @@ export function ChatSidebar({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
+        <div className="p-2 space-y-1 pb-16">
           {sortedChats.map((chat) => (
             <div
               key={chat.id}
@@ -121,7 +138,7 @@ export function ChatSidebar({
                         e.stopPropagation();
                         handleToggleFavorite(chat);
                       }}
-                      className="mt-0.5"
+                      className="flex-shrink-0 p-1 hover:bg-muted rounded transition-smooth"
                     >
                       <Star
                         className={`h-4 w-4 transition-smooth ${
@@ -175,6 +192,19 @@ export function ChatSidebar({
           )}
         </div>
       </ScrollArea>
+
+      {/* Hide panel button */}
+      <div className="absolute bottom-4 right-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsCollapsed(true)}
+          className="h-8 w-8 hover:bg-muted rounded-full shadow-md"
+          title="Hide panel"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
