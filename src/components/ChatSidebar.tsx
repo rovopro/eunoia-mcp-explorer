@@ -1,4 +1,4 @@
-import { Plus, Star, Edit2, Trash2, ChevronLeft } from "lucide-react";
+import { Plus, Star, Edit2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -82,15 +82,18 @@ export function ChatSidebar({
   if (isCollapsed) {
     return (
       <div className="w-12 border-r border-border bg-card/50 flex flex-col h-full relative">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsCollapsed(false)}
-          className="m-2 hover:bg-muted"
-          title="Show panel"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        {/* Show panel button - same position as hide button */}
+        <div className="absolute bottom-4 right-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsCollapsed(false)}
+            className="h-8 w-8 hover:bg-muted rounded-full shadow-md"
+            title="Show panel"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     );
   }
