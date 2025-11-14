@@ -50,6 +50,15 @@ export function ChatSidebar({
     }
   };
 
+  const formatChatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  };
+
   const handleToggleFavorite = (chat: Chat) => {
     onUpdateChat(chat.id, { isFavorite: !chat.isFavorite });
   };
@@ -125,7 +134,7 @@ export function ChatSidebar({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{chat.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(chat.createdAt).toLocaleDateString()}
+                        {formatChatDate(chat.createdAt)}
                       </p>
                     </div>
                   </div>

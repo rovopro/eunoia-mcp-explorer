@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavLink } from "@/components/NavLink";
-import mcpLogo from "@/assets/mcp-logo.png";
+import ponyLogo from "@/assets/pony-logo.png";
 import { AddDataSourceDialog } from "@/components/AddDataSourceDialog";
 import { DataSourcesDropdown, DataSource } from "@/components/DataSourcesDropdown";
 import { ChatInterface } from "@/components/ChatInterface";
@@ -76,10 +76,16 @@ const Index = () => {
   };
 
   const handleNewChat = () => {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
     const newChat: Chat = {
       id: crypto.randomUUID(),
-      name: `Chat ${new Date().toLocaleDateString()}`,
-      createdAt: new Date().toISOString(),
+      name: `Chat ${now.toLocaleDateString()} ${timeString}`,
+      createdAt: now.toISOString(),
       isFavorite: false,
       messages: [],
     };
@@ -131,14 +137,15 @@ const Index = () => {
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm z-10 flex-shrink-0">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={mcpLogo} alt="MCP Logo" className="h-8 w-8" />
+            <img src={ponyLogo} alt="Pony Logo" className="h-10 w-10" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              MCP Data Researcher
+              MCP PONY DATA RESEARCHER (v 0.1 BETA)
             </h1>
           </div>
           <nav className="flex items-center gap-4">
             <NavLink to="/">Home</NavLink>
             <NavLink to="/faq">FAQ</NavLink>
+            <NavLink to="#">Documentation</NavLink>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Logout
@@ -198,7 +205,7 @@ const Index = () => {
               <div className="bg-muted/30 rounded-xl p-8 text-center animate-fade-in">
                 <div className="flex justify-center mb-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-secondary p-2">
-                    <img src={mcpLogo} alt="MCP" className="h-full w-full object-contain" />
+                    <img src={ponyLogo} alt="Pony" className="h-full w-full object-contain" />
                   </div>
                 </div>
                 <h3 className="text-lg font-medium mb-2">No data sources yet</h3>
