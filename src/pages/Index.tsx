@@ -51,7 +51,7 @@ const Index = () => {
   };
 
   const handleLogout = () => {
-    // Logout functionality will be implemented later
+    // Mock logout - clear all data
     localStorage.clear();
     navigate("/auth");
   };
