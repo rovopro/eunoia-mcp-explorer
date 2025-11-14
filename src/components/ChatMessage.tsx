@@ -17,8 +17,34 @@ interface ChatMessageProps {
 export function ChatMessage({ role, content, timestamp, chartData }: ChatMessageProps) {
   const isUser = role === "user";
   
-  // Convert timestamp to Date object if it's a number
-  const timestampDate = timestamp ? (typeof timestamp === 'number' ? new Date(timestamp) : timestamp) : undefined;
+  // Convert timestamp to Date object with validation
+  const getTimestampDate = () => {
+    if (!timestamp) return undefined;
+    
+    try {
+      // If it's already a Date object with valid methods
+      if (timestamp instanceof Date && !isNaN(timestamp.getTime())) {
+        return timestamp;
+      }
+      
+      // If it's a number (Unix timestamp)
+      if (typeof timestamp === 'number') {
+        return new Date(timestamp);
+      }
+      
+      // If it's a string, try to parse it
+      if (typeof timestamp === 'string') {
+        const date = new Date(timestamp);
+        return isNaN(date.getTime()) ? undefined : date;
+      }
+      
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  
+  const timestampDate = getTimestampDate();
 
   return (
     <div
