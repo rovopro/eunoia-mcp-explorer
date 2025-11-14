@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, HelpCircle } from "lucide-react";
+import { Send, HelpCircle, Maximize2, Minimize2 } from "lucide-react";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChartMessage } from "@/components/ChartMessage";
 import { FileUploadButton } from "@/components/FileUploadButton";
@@ -36,6 +36,7 @@ export function ChatInterface({ chatId, messages, onSendMessage, onUpdateMessage
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export function ChatInterface({ chatId, messages, onSendMessage, onUpdateMessage
     setIsLoading(true);
 
     const startTime = Date.now();
-    const minLoadingTime = 5000; // 5 seconds minimum
+    const minLoadingTime = 3000; // 3 seconds minimum
 
     // Simulate AI response - Replace this with actual Azure AI Foundry integration
     setTimeout(() => {
@@ -149,14 +150,24 @@ export function ChatInterface({ chatId, messages, onSendMessage, onUpdateMessage
 
       onUpdateMessages([...newMessages, assistantMessage]);
       setIsLoading(false);
-    }, 5000);
+    }, 3000);
   };
 
   return (
-    <div className="flex flex-col h-[400px] border rounded-xl bg-card">
-      <div className="border-b p-4">
-        <h2 className="text-lg font-semibold">Chat</h2>
-        <p className="text-sm text-muted-foreground">Ask questions about your data</p>
+    <div className={`flex flex-col border rounded-xl bg-card ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'h-[400px]'}`}>
+      <div className="border-b p-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Chat</h2>
+          <p className="text-sm text-muted-foreground">Ask questions about your data</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className="hover:bg-muted"
+        >
+          {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+        </Button>
       </div>
 
       <ScrollArea className="flex-1 p-4">

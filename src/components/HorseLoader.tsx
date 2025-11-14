@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
+import ponyLogo from "@/assets/pony-logo.png";
 
 export function HorseLoader() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const duration = 5000; // 5 seconds
+    const duration = 3000; // 3 seconds
     const interval = 50; // Update every 50ms
     const increment = (interval / duration) * 100;
 
@@ -21,22 +22,17 @@ export function HorseLoader() {
 
   return (
     <div className="flex flex-col items-center gap-3 py-4">
-      <div className="relative w-full max-w-md h-16 bg-muted/30 rounded-lg overflow-hidden border border-border/40">
-        {/* Race track lines */}
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full h-px bg-border/20" />
-        </div>
-        <div className="absolute inset-0 flex items-center mt-4">
-          <div className="w-full h-px bg-border/20" />
-        </div>
+      <div className="relative w-full max-w-md">
+        <Progress value={progress} className="h-3" />
         
-        {/* Running horse */}
-        <div className="absolute inset-0 flex items-center animate-[slide-in-right_2s_ease-in-out_infinite]">
-          <span className="text-4xl ml-4">🐴</span>
+        {/* Logo moving along progress bar */}
+        <div 
+          className="absolute top-0 -translate-y-1/2 transition-all duration-100"
+          style={{ left: `${progress}%`, transform: `translateX(-50%) translateY(-50%)` }}
+        >
+          <img src={ponyLogo} alt="Loading" className="w-8 h-8 object-contain" />
         </div>
       </div>
-      
-      <Progress value={progress} className="w-full max-w-md" />
       
       <p className="text-sm text-muted-foreground animate-pulse">
         Thinking to provide you with the best Answer Possible
